@@ -18,14 +18,12 @@ exports.signup = async (req, res) => {
         console.error(error);
 
         if (error.name === 'ValidationError') {
-            res.status(400).send({
-                success: false,
-                msg: "User registration failed due to validation error",
-                error: error.message
-            });
-
-        
-        } 
+            const errors = Object.keys(error.errors).map(key => ({
+                field: key,
+                message: error.errors[key].message
+            }));
+            return res.status(400).json({ success: false, errors });
+        }
         else if (error.code = 11000){
             const duplicateCode = Object.keys(error.keyValue[0])
             res.status(400).send({
