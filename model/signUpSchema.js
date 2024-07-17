@@ -7,8 +7,8 @@ const signUpSchema = new mongoose.Schema({
     } ,
     email : {
         type : String , 
-        required : [true, "Username is requied"],
-        unique : [true, "Username already exist"],
+        required : [true, "Email is requied"],
+        unique : [true, "Email already exist"],
         trim : true
     } ,
     phoneNumber : {
@@ -20,7 +20,7 @@ const signUpSchema = new mongoose.Schema({
     } , 
     password : {
         type : String , 
-        required : [true, "password is required!"],
+        required : [true, "Password is required!"],
         trim : true
     },
     resetPasswordToken: String,

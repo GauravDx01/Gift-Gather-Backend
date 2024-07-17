@@ -1,6 +1,33 @@
 const users = require("../model/wishlistSchema")
+const name = require('../model/wishlistName')
 const multer = require('multer') 
 const path = require('path')
+
+
+// to add the wishlist name 
+exports.addWishlistName = async(req , res)=>{
+    const {wishlistName , userId} = req.body
+    try {
+        const result = await name.create({wishlistName , userId})
+        await result.save()
+        res.json({
+            success : true,
+            data : result
+        }
+           
+        )
+    } catch (error) {
+        res.status(500).send({
+            msg :  "Internal server error"
+         })
+    }
+   
+}
+
+
+
+
+
 const storage = multer.diskStorage({
     destination : (req , file , cb)=>{
         cb(null , './public/wishlist')
@@ -10,13 +37,14 @@ const storage = multer.diskStorage({
     }
 
 })
+
 const upload = multer({storage : storage})
 const uploadMiddleware = upload.single('image');
 exports.addWishlist  = [uploadMiddleware,  async (req,res)=>{
-    const {productLink , giftName , price , desiredRate , description , parentId} = req.body
+    const {productLink , giftName , price , desiredRate , description , parentId , nameId} = req.body
     const image = req.file ? req.file.path : null;
     try {
-        const result = await users.create({productLink , giftName , price , desiredRate , parentId ,  description , image : image})
+        const result = await users.create({productLink , giftName , price , desiredRate , parentId , nameId,  description , image : image})
         res.status(201).json({ success: true, data: result });
     } catch (error) {
         if (error.name === 'ValidationError') {

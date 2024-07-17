@@ -1,9 +1,9 @@
 const users = require('../model/eventSchema')
 
 exports.addEvent = async(req , res)=>{
-    const {eventType ,eventName,date , time , location , wishlist ,description , parentId} = req.body
+    const {eventType ,eventName,date , time , location , wishlist ,description , parentId , wishlistId} = req.body
     try {
-        const result = await users.create({eventType ,eventName,date , time , location , wishlist , description , parentId})
+        const result = await users.create({eventType ,eventName,date , time , location , wishlist , description , parentId, wishlistId})
         await result.save()
         res.status(200).send({
             sucess : true , 

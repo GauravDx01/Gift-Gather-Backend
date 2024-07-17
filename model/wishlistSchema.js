@@ -36,8 +36,8 @@ const wishlistSchema = new mongoose.Schema({
     min: [0, "Desired rate must be a positive number"],
   },
   parentId: {
-    type: String,
-    required: [true, "ParentID rate is required"],
+    type: mongoose.Schema.Types.ObjectId,
+    required: [true, "ParentID  is required"],
     
   },
   description: { type: String, required: [true, "Description is required"] },
@@ -51,5 +51,13 @@ const wishlistSchema = new mongoose.Schema({
     default: getCurrentTime(),
     type: String
   },
+  nameId : {
+    type: mongoose.Schema.Types.ObjectId,
+    required: [true, "nameId  is required"], 
+  }
 });
 module.exports = mongoose.model("wishlist", wishlistSchema);
+
+
+
+

@@ -29,8 +29,12 @@ const eventSchema = new mongoose.Schema({
         required :  [true , "description is required"]  
     },
     parentId : {
-        type : String ,
+        type : mongoose.Schema.Types.ObjectId ,
         required :  [true , "Parent-id  is required"]  
+    },
+    wishlistId : {
+        type : mongoose.Schema.Types.ObjectId ,
+        required :  [true , "Wishlist-id  is required"]  
     }
 })
 
