@@ -211,8 +211,6 @@ exports.resetPassword = async (req, res) => {
 
 
 
-
-
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, './public/profilePhoto'); // yahan 'uploads' folder ka path diya hai
@@ -231,9 +229,9 @@ exports.editProfile = [
     uploadMiddleware, // Use multer middleware to handle file upload
     async (req, res) => {
         const { phoneNumber, password, email, gender, website } = req.body;
-        const profilePhoto = req.file ? req.file.path : null;
+        const profilePhoto = req.file ? req.file.filename : null;
         const { id } = req.params;
-
+    
         try {
             const user = await User.findById(id);
             if (!user) {
@@ -241,18 +239,18 @@ exports.editProfile = [
                     msg: "Profile not found!"
                 });
             }
-
+    
             user.phoneNumber = phoneNumber;
             user.password = password;
             user.email = email;
             user.gender = gender;
             user.website = website;
             if (profilePhoto) {
-                user.profilePhoto = profilePhoto;
+                user.profilePhoto = `http://localhost:5001/profilePhoto/${profilePhoto}`;
             }
-
+    
             await user.save();
-
+    
             res.status(200).send({
                 msg: "Profile updated successfully",
                 success: true,
@@ -261,7 +259,7 @@ exports.editProfile = [
         } catch (error) {
             res.status(500).send({
                 msg: "Internal server error",
-                error: error.message // Optional: include error message for debugging
+                error: error.message
             });
         }
     }

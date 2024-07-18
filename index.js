@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const router = require('./routes/routes');
+const notificationRouter = require('./routes/notificationsRoutes');
 const serverr = require('./server/server')
 const port = process.env.PORT;
 const app = express();
@@ -18,6 +19,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(express.json());
 app.use('/api', router);
+app.use('/api/notification', notificationRouter);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Socket.io connection

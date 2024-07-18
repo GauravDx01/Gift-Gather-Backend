@@ -54,6 +54,11 @@ const wishlistSchema = new mongoose.Schema({
   nameId : {
     type: mongoose.Schema.Types.ObjectId,
     required: [true, "nameId  is required"], 
+  },
+  status :{
+    type: String , 
+    default : "unmarked"
+
   }
 });
 module.exports = mongoose.model("wishlist", wishlistSchema);

@@ -2,7 +2,8 @@ const User = require('../model/signUpSchema');
 const Event = require('../model/eventSchema');
 const Invitation = require('../model/inviteFriend');
 const nodemailer = require('nodemailer');
-const Group = require('../model/groupSchema')
+const Group = require('../model/groupSchema');
+const Notification = require('../model/notificationSchema');
 require('dotenv').config(); // Load environment variables
 
 // Email configuration
@@ -69,6 +70,13 @@ exports.invite = async (req, res) => {
             });
         });
 
+        // Create notification for event creator
+        const notification = new Notification({
+            userId: userId,
+            message: `You have invited friends to ${event.eventName}.`
+        });
+        await notification.save();
+
         res.status(200).send({
             success: true,
             message: 'Invitations sent successfully',
@@ -81,10 +89,7 @@ exports.invite = async (req, res) => {
     }
 };
 
-
-
-
-// accept the invite 
+// Accept the invite 
 exports.accept = async (req, res) => {
     const { eventId, friendEmail } = req.query;
 
@@ -120,6 +125,14 @@ exports.accept = async (req, res) => {
         invitation.status = 'accepted';
         await invitation.save();
 
+        // Create notification for event creator
+        const eventCreator = await User.findById(event.createdBy);
+        const notification = new Notification({
+            userId: event.createdBy,
+            message: `${user.userName} has accepted your invitation to ${event.eventName}.`
+        });
+        await notification.save();
+
         res.status(200).send('Invitation accepted successfully');
     } catch (error) {
         console.error('Error accepting invitation:', error); // Debugging log
@@ -127,13 +140,8 @@ exports.accept = async (req, res) => {
     }
 };
 
-
-
-
-// reject the invitation
-
-exports.reject = async(req , res)=>{
-    
+// Reject the invitation
+exports.reject = async (req, res) => {
     const { eventId, friendEmail } = req.query;
 
     try {
@@ -146,9 +154,17 @@ exports.reject = async(req , res)=>{
         invitation.status = 'rejected';
         await invitation.save();
 
+        // Create notification for event creator
+        const user = await User.findOne({ email: friendEmail });
+        const event = await Event.findById(eventId);
+        const notification = new Notification({
+            userId: event.createdBy,
+            message: `${user.userName} has declined your invitation to ${event.eventName}.`
+        });
+        await notification.save();
+
         res.send('Invitation rejected');
     } catch (error) {
         res.status(500).send(error.toString());
     }
-
-}
+};

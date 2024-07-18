@@ -1,4 +1,6 @@
-const mongoose = require('mongoose')
+// model/createPoolSchema.js
+
+const mongoose = require('mongoose');
 
 const createPoolSchema = new mongoose.Schema({
     poolAmount: {
@@ -42,24 +44,7 @@ const createPoolSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
-    },
-    chat: [{
-        senderId: {
-            type: mongoose.Schema.Types.ObjectId,
-            
-            required: true
-        },
-        message: {
-            type: String,
-            required: true
-        },
-        timestamp: {
-            type: Date,
-            default: Date.now
-        }
-    }]
+    }
+});
 
-
-})
-
-module.exports  = mongoose.model("pool" , createPoolSchema )
+module.exports = mongoose.model('Pool', createPoolSchema);

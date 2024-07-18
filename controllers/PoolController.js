@@ -2,6 +2,8 @@ const Pool = require('../model/createPoolSchema');
 const User = require('../model/signUpSchema');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const Chat = require('../model/poolChatSchema');
+const Notification = require('../model/notificationSchema');
 require('dotenv').config(); // Load environment variables
 
 // Email configuration
@@ -12,7 +14,6 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASSWORD
     }
 });
-
 exports.createPool = async (req, res) => {
     const { poolAmount, createdBy, invitedFriends } = req.body;
     if (!Array.isArray(invitedFriends)) {
@@ -20,7 +21,6 @@ exports.createPool = async (req, res) => {
     }
 
     try {
-        // Verify invited friends' emails and get their IDs
         const friendsDetails = await Promise.all(invitedFriends.map(async (email) => {
             const friend = await User.findOne({ email });
             if (friend) {
@@ -31,11 +31,9 @@ exports.createPool = async (req, res) => {
             }
         }));
 
-        // Separate valid and invalid friends
         const validFriends = friendsDetails.filter(friend => friend.userId);
         const invalidFriends = friendsDetails.filter(friend => !friend.userId);
 
-        // Pool create karna
         const newPool = new Pool({
             poolAmount: poolAmount,
             createdBy: createdBy,
@@ -43,13 +41,12 @@ exports.createPool = async (req, res) => {
             isAdmin: createdBy
         });
 
-        // Pool ko save karna
         await newPool.save();
 
-        // Sabhi valid friends ko invite karne ke liye email bhejna
         validFriends.forEach(async (friend) => {
             const acceptLink = `${process.env.BASE_URL}/api/pools/accept/${newPool._id}/${friend.token}`;
             const rejectLink = `${process.env.BASE_URL}/api/pools/reject/${newPool._id}/${friend.token}`;
+
 
             const mailOptions = {
                 from: process.env.EMAIL,
@@ -63,12 +60,18 @@ Reject: ${rejectLink}`
             try {
                 await transporter.sendMail(mailOptions);
                 console.log(`Invitation sent to ${friend.email}`);
+
+                // Create notification for each valid friend
+                const notification = new Notification({
+                    userId: friend.userId,
+                    message: `You have been invited to join a pool with amount ${poolAmount}`
+                });
+                await notification.save();
             } catch (error) {
                 console.error(`Error sending invitation to ${friend.email}:`, error);
             }
         });
 
-        // Response bhejna
         res.status(201).send({
             message: 'Pool created and invitations sent',
             invalidFriends: invalidFriends.map(friend => friend.email)
@@ -99,6 +102,13 @@ exports.acceptInvitation = async (req, res) => {
 
         await pool.save();
 
+        // Create notification for pool creator
+        const notification = new Notification({
+            userId: pool.createdBy,
+            message: `${friend.email} has accepted your pool invitation`
+        });
+        await notification.save();
+
         res.status(200).send('Invitation accepted');
     } catch (error) {
         console.error('Error accepting invitation:', error);
@@ -106,7 +116,8 @@ exports.acceptInvitation = async (req, res) => {
     }
 };
 
-// Reject invitation
+
+// reject invitation
 exports.rejectInvitation = async (req, res) => {
     const { poolId, token } = req.params;
 
@@ -124,6 +135,13 @@ exports.rejectInvitation = async (req, res) => {
         friend.status = 'declined';
 
         await pool.save();
+
+        // Create notification for pool creator
+        const notification = new Notification({
+            userId: pool.createdBy,
+            message: `${friend.email} has declined your pool invitation`
+        });
+        await notification.save();
 
         res.status(200).send('Invitation declined');
     } catch (error) {
@@ -143,13 +161,13 @@ exports.sendPoolMessage = async (req, res) => {
             return res.status(404).send('Pool not found');
         }
 
-        pool.chat.push({
+        const newChat = new Chat({
+            poolId: poolId,
             senderId: senderId,
-            message: message,
-            timestamp: new Date()
+            message: message
         });
 
-        await pool.save();
+        await newChat.save();
 
         res.status(200).send('Message sent');
     } catch (error) {
@@ -157,24 +175,36 @@ exports.sendPoolMessage = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
-
-// Get messages
+// get messsages
 exports.getPoolMessages = async (req, res) => {
     const { poolId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
 
     try {
-        const pool = await Pool.findById(poolId).populate('chat.senderId', 'name'); // Populating sender's name
+        const pool = await Pool.findById(poolId);
         if (!pool) {
             return res.status(404).send('Pool not found');
         }
 
-        res.status(200).send(pool.chat);
+        const messages = await Chat.find({ poolId })
+            .populate('senderId', 'name')
+            .sort({ timestamp: -1 }) // Sorting messages by timestamp in descending order
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+
+        const totalMessages = await Chat.countDocuments({ poolId });
+
+        res.status(200).send({
+            totalMessages,
+            totalPages: Math.ceil(totalMessages / limit),
+            currentPage: parseInt(page),
+            messages
+        });
     } catch (error) {
         console.error('Error getting messages:', error);
         res.status(500).send('Server error');
     }
-};
-
+}
 
 
 
@@ -235,8 +265,8 @@ exports.editPool = async (req , res)=>{
 
         // Send invitation emails to new friends
         validFriends.forEach(async (friend) => {
-            const acceptLink = `${process.env.BASE_URL}/api/pools/accept/${updatedPool._id}/${friend.token}`;
-            const rejectLink = `${process.env.BASE_URL}/api/pools/reject/${updatedPool._id}/${friend.token}`;
+            const acceptLink = `${process.env.BASE_URL}/accept-pool-invite/${updatedPool._id}/${friend.token}`;
+            const rejectLink = `${process.env.BASE_URL}/reject-pool-invite/${updatedPool._id}/${friend.token}`;
 
             const mailOptions = {
                 from: process.env.EMAIL,
